@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Search Wizard 2.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">Threat Discovery Interface</p>
+          <h1>Search Wizard 2.0</h1>
+          <p class="subtitle">
+            Select playbook, add keyword tags, optionally edit raw boolean, then run one-off Twitter collection.
+          </p>
+        </div>
+        <div class="header-actions">
+          <button id="save-search-trigger" class="ghost-btn icon-btn hidden" type="button" title="Save Search">
+            <span class="icon-disk" aria-hidden="true"></span>
+            <span>Save Search</span>
+          </button>
+          <button id="cancel-btn" class="ghost-btn danger-btn" type="button">Cancel Operation</button>
+        </div>
+      </header>
+
+      <div class="workspace-grid">
+        <section class="builder-column">
+          <section class="panel glass">
+            <h2>1. Playbook</h2>
+            <div id="playbook-selection-view">
+              <p class="help-text">Select a playbook to begin. It presets issue/threat areas only; keyterm tags start empty.</p>
+              <div class="playbook-grid" id="playbook-grid"></div>
+            </div>
+            <div id="playbook-active-view" class="hidden">
+              <p class="help-text">Active playbook loaded. Add keyterm tags, adjust issues, or switch playbooks.</p>
+              <div id="active-playbook-card" class="active-playbook-card"></div>
+              <button id="change-playbook-btn" class="ghost-btn" type="button">Back to Playbooks</button>
+            </div>
+          </section>
+
+          <div id="builder-flow" class="builder-flow hidden">
+            <details id="target-inputs-panel" class="panel glass collapsible-panel" open>
+              <summary>2. Target Inputs</summary>
+              <p class="help-text">Type terms and press Enter to create quoted tags.</p>
+              <div class="form-grid">
+                <label id="layer1-field" class="field tag-field">
+                  <span class="field-title">Layer 1: Unique Keywords</span>
+                  <div class="tag-input-shell" data-field="unique">
+                    <div class="tag-list" id="unique-tags"></div>
+                    <input id="unique-term-input" class="tag-input" type="text" placeholder="e.g. &quot;barack obama&quot;, &quot;chrysler build&quot;" />
+                  </div>
+                </label>
+
+                <label id="layer2-field" class="field tag-field">
+                  <span class="field-title">Layer 2: Non-Unique Keywords</span>
+                  <div class="tag-input-shell" data-field="nonunique">
+                    <div class="tag-list" id="nonunique-tags"></div>
+                    <input id="nonunique-term-input" class="tag-input" type="text" placeholder="e.g. &quot;johns smith&quot;, &quot;chinatown&quot;" />
+                  </div>
+                </label>
+
+                <label id="layer3-field" class="field tag-field">
+                  <span class="field-title">Layer 3: Linking Keywords</span>
+                  <div class="tag-input-shell" data-field="linking">
+                    <div class="tag-list" id="linking-tags"></div>
+                    <input id="linking-term-input" class="tag-input" type="text" placeholder="e.g. &quot;imperial smith town bank&quot;, &quot;new york&quot;" />
+                  </div>
+                </label>
+              </div>
+            </details>
+
+            <details id="issue-area-panel" class="panel glass collapsible-panel">
+              <summary>3. Issue Area</summary>
+              <p class="help-text">Select issue systems and optionally add custom issue keywords.</p>
+              <div class="form-grid">
+                <fieldset id="issue-area-field" class="field issue-area-field">
+                  <legend class="field-title">Layer 4: Issue Areas (Threat Autofill)</legend>
+                  <div id="issue-area-grid" class="issue-area-grid"></div>
+                  <div class="toggle-row">
+                    <label class="switch-row" for="custom-issue-toggle">
+                      <input id="custom-issue-toggle" type="checkbox" />
+                      Add Custom Issue Keywords
+                    </label>
+                  </div>
+                  <div id="custom-issue-editor" class="raw-logic-editor hidden">
+                    <label class="field tag-field">
+                      <span class="field-title">Custom Issue/Threat Keywords</span>
+                      <div class="tag-input-shell" data-field="custom-issues">
+                        <div class="tag-list" id="custom-issue-tags"></div>
+                        <input id="custom-issue-input" class="tag-input" type="text" placeholder="Type and press Enter" />
+                      </div>
+                    </label>
+                  </div>
+                  <div class="toggle-row">
+                    <label class="switch-row" for="show-issue-keywords-toggle">
+                      <input id="show-issue-keywords-toggle" type="checkbox" />
+                      Show Issue Keywords
+                    </label>
+                  </div>
+                  <div id="issue-keywords-preview" class="issue-keywords-preview hidden"></div>
+                </fieldset>
+              </div>
+            </details>
+
+            <details id="exclusion-panel" class="panel glass collapsible-panel">
+              <summary>4. Exclusion Criteria</summary>
+              <p class="help-text">Optional exclusions. Keep collapsed unless you need to filter out known noise terms.</p>
+              <div id="exclusion-editor" class="raw-logic-editor">
+                <label class="field tag-field">
+                  <span class="field-title">Exclusion Criteria</span>
+                  <div class="tag-input-shell" data-field="exclusions">
+                    <div class="tag-list" id="exclusion-tags"></div>
+                    <input id="exclusion-term-input" class="tag-input" type="text" placeholder="Type and press Enter" />
+                  </div>
+                </label>
+              </div>
+            </details>
+
+            <details id="review-boolean-panel" class="panel glass collapsible-panel">
+              <summary>5. Review / Edit Boolean Query</summary>
+              <div id="raw-logic-editor" class="raw-logic-editor">
+                <label class="field final-logic-field">
+                  <span class="field-title">Raw Boolean Query</span>
+                  <textarea id="final-logic" rows="6"></textarea>
+                </label>
+                <div class="logic-actions">
+                  <button id="reset-logic-btn" class="ghost-btn" type="button">Reset to Auto Query</button>
+                </div>
+              </div>
+            </details>
+
+            <section class="panel glass action-panel">
+              <div class="action-row">
+                <button id="run-search-btn" class="ghost-btn" type="button">Run Search</button>
+              </div>
+              <p id="search-status" class="help-text">Query ready. Run search to collect raw data.</p>
+            </section>
+          </div>
+        </section>
+
+        <aside class="feed-column">
+          <section class="panel glass">
+            <h2>Twitter Raw Results</h2>
+            <p class="help-text">Results populate only when you click Run Search.</p>
+            <div id="feed-empty-state" class="feed-empty-state">
+              Build your boolean query, then click Run Search to collect one-off raw posts from X/Twitter.
+            </div>
+            <div id="feed-summary" class="feed-summary"></div>
+            <div id="social-feed" class="social-feed"></div>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <div id="save-search-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="save-search-title">
+      <div class="modal-card glass">
+        <div class="modal-head">
+          <h2 id="save-search-title">Save Search</h2>
+          <button id="save-search-close" class="ghost-btn" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <label class="field">
+            <span class="field-title">1. Search Title</span>
+            <input id="save-search-name" type="text" maxlength="120" placeholder="Playbook - Primary keyterm" />
+          </label>
+
+          <fieldset class="field">
+            <legend class="field-title">2. Live Stream Layout</legend>
+            <label class="switch-row">
+              <input type="radio" name="stream-layout" id="stream-layout-master" value="master" checked />
+              Single master search for all sources
+            </label>
+            <label class="switch-row">
+              <input type="radio" name="stream-layout" id="stream-layout-source" value="per_source" />
+              Individual searches for each source
+            </label>
+            <p class="help-text">Master mode is simpler. Per-source mode enables separate monitoring lanes by source.</p>
+          </fieldset>
+
+          <fieldset class="field">
+            <legend class="field-title">3. Alerting</legend>
+            <label class="switch-row" for="alerting-enabled">
+              <input id="alerting-enabled" type="checkbox" />
+              Activate alerting for this search
+            </label>
+            <div id="alerting-config" class="form-grid hidden">
+              <label class="inline-field" for="alerting-cadence">
+                <span>Cadence</span>
+                <select id="alerting-cadence">
+                  <option value="instant">Instant</option>
+                  <option value="hourly">Hourly Digest</option>
+                  <option value="daily">Daily Digest</option>
+                </select>
+              </label>
+              <label class="inline-field" for="alerting-threshold">
+                <span>Trigger Threshold</span>
+                <select id="alerting-threshold">
+                  <option value="1">1 matching post</option>
+                  <option value="3">3 matching posts</option>
+                  <option value="5">5 matching posts</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+        </div>
+        <div class="modal-actions">
+          <button id="save-search-confirm" class="ghost-btn" type="button">Save Search</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
