@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import email.utils
 import http.server
 import json
@@ -258,9 +259,29 @@ def main() -> None:
 
     handler = lambda *a, **k: TripwireHandler(*a, directory=str(root), **k)
 
-    with ReusableTCPServer((args.host, args.port), handler) as httpd:
-        url = f"http://{args.host}:{args.port}/index.html"
+    max_port_tries = 20
+    httpd: ReusableTCPServer | None = None
+    chosen_port = args.port
+    for offset in range(max_port_tries + 1):
+        candidate_port = args.port + offset
+        try:
+            httpd = ReusableTCPServer((args.host, candidate_port), handler)
+            chosen_port = candidate_port
+            break
+        except OSError as exc:
+            # Port busy: keep trying next ports within the retry window.
+            if getattr(exc, "errno", None) == errno.EADDRINUSE:
+                continue
+            raise
+
+    if httpd is None:
+        raise OSError(f"Could not bind to {args.host} on ports {args.port}-{args.port + max_port_tries}")
+
+    with httpd:
+        url = f"http://{args.host}:{chosen_port}/index.html"
         print(f"Tripwire UI serving from {root}")
+        if chosen_port != args.port:
+            print(f"Requested port {args.port} busy; using {chosen_port}")
         print(f"Open: {url}")
         print("API: /api/twitter-search?q=<query>")
         print("Press Ctrl+C to stop")
